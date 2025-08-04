@@ -16,7 +16,30 @@ USERS = {
     "usuario4": "44332211",
     "usuario5": "55667788",
     "usuario6": "88776655",
-    "usuario7": "99887766"
+    "usuario7": "99887766",
+    "usuario8": "33445566",
+    "usuario9": "66778899",
+    "usuario10": "11223355",
+    "usuario11": "55443322",
+    "usuario12": "77889900",
+    "usuario13": "22334455",
+    "usuario14": "66554433",
+    "usuario15": "88990011",
+    "usuario16": "44556677",
+    "usuario17": "77665544",
+    "usuario18": "99001122",
+    "usuario19": "55667788",
+    "usuario20": "88776655",
+    "usuario21": "11223344",
+    "usuario22": "44332211",
+    "usuario23": "66778899",
+    "usuario24": "99887766",
+    "usuario25": "22334455",
+    "usuario26": "55443322",
+    "usuario27": "77889900",
+    "usuario28": "33445566",
+    "usuario29": "66554433",
+    "usuario30": "88990011"
 }
 
 # Sesiones activas (en producción deberían estar en Redis o base de datos)
