@@ -1,8 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import os
+import threading
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -44,6 +46,33 @@ USERS = {
 
 # Sesiones activas (en producción deberían estar en Redis o base de datos)
 active_sessions = {}
+
+# Función para limpiar sesiones automáticamente
+def auto_cleanup_sessions():
+    """Limpia las sesiones automáticamente cada semana (lunes 8am)"""
+    while True:
+        try:
+            now = datetime.now()
+            
+            # Verificar si es lunes a las 8am
+            if now.weekday() == 0 and now.hour == 8 and now.minute == 0:
+                sessions_cleared = len(active_sessions)
+                active_sessions.clear()
+                print(f"[AUTO-CLEANUP] Limpieza semanal automática completada. Sesiones eliminadas: {sessions_cleared}")
+                
+                # Esperar 1 hora para evitar múltiples ejecuciones
+                time.sleep(3600)
+            else:
+                # Verificar cada minuto
+                time.sleep(60)
+                
+        except Exception as e:
+            print(f"[AUTO-CLEANUP] Error en limpieza automática: {str(e)}")
+            time.sleep(300)  # Esperar 5 minutos si hay error
+
+# Iniciar thread de limpieza automática
+cleanup_thread = threading.Thread(target=auto_cleanup_sessions, daemon=True)
+cleanup_thread.start()
 
 @app.route('/')
 def home():
@@ -210,6 +239,52 @@ def status():
         
     except Exception as e:
         print(f"Error en status: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": "Error interno del servidor"
+        }), 500
+
+@app.route('/clear_all_sessions', methods=['POST'])
+def clear_all_sessions():
+    try:
+        # Limpiar todas las sesiones activas
+        sessions_cleared = len(active_sessions)
+        active_sessions.clear()
+        
+        print(f"Todas las sesiones han sido limpiadas. Sesiones eliminadas: {sessions_cleared}")
+        
+        return jsonify({
+            "success": True,
+            "message": f"Todas las sesiones han sido limpiadas. Sesiones eliminadas: {sessions_cleared}",
+            "sessions_cleared": sessions_cleared
+        })
+        
+    except Exception as e:
+        print(f"Error al limpiar sesiones: {str(e)}")
+        return jsonify({
+            "success": False,
+            "message": "Error interno del servidor"
+        }), 500
+
+@app.route('/cleanup_info', methods=['GET'])
+def cleanup_info():
+    """Información sobre la limpieza automática"""
+    try:
+        now = datetime.now()
+        next_cleanup = now + timedelta(days=(7 - now.weekday()) % 7)
+        next_cleanup = next_cleanup.replace(hour=8, minute=0, second=0, microsecond=0)
+        
+        return jsonify({
+            "success": True,
+            "auto_cleanup_enabled": True,
+            "cleanup_schedule": "Lunes 8:00 AM",
+            "next_cleanup": next_cleanup.isoformat(),
+            "days_until_cleanup": (next_cleanup - now).days,
+            "current_sessions": len(active_sessions)
+        })
+        
+    except Exception as e:
+        print(f"Error al obtener información de limpieza: {str(e)}")
         return jsonify({
             "success": False,
             "message": "Error interno del servidor"
