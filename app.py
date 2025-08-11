@@ -797,6 +797,602 @@ def cleanup_info():
             "message": "Error interno del servidor"
         }), 500
 
+@app.route('/admin', methods=['GET', 'POST'])
+def admin_panel():
+    """Panel de administración web para gestionar sesiones"""
+    
+    if request.method == 'GET':
+        # Mostrar formulario de login
+        admin_html = '''<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - Mordekai Auth Server</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .login-form {
+            padding: 40px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .form-group input {
+            width: 100%;
+            max-width: 300px;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .login-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .error-message {
+            background: #e74c3c;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .admin-panel {
+            padding: 30px;
+            display: none;
+        }
+
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .admin-title {
+            font-size: 1.8em;
+            color: #2c3e50;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .sessions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .sessions-table th,
+        .sessions-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .sessions-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .sessions-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .action-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .refresh-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #7f8c8d;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 Panel de Administración</h1>
+            <p>Gestiona sesiones activas del servidor de autenticación</p>
+        </div>
+
+        <div id="loginForm" class="login-form">
+            <h2>Iniciar Sesión de Administrador</h2>
+            <form id="adminLoginForm">
+                <div class="form-group">
+                    <label for="username">Usuario:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Contraseña:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="login-btn">🔑 Iniciar Sesión</button>
+            </form>
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+        </div>
+
+        <div id="adminPanel" class="admin-panel">
+            <div class="admin-header">
+                <h2 class="admin-title">👥 Gestión de Sesiones Activas</h2>
+                <button class="logout-btn" onclick="logout()">🚪 Cerrar Sesión</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalSessions">-</div>
+                    <div class="stat-label">Sesiones Activas</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="maxUsers">-</div>
+                    <div class="stat-label">Total Usuarios</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="usagePercent">-</div>
+                    <div class="stat-label">Uso del Servidor</div>
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="loadSessions()">🔄 Actualizar Datos</button>
+
+            <div id="sessionsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Cargando sesiones...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let adminToken = null;
+
+        document.getElementById('adminLoginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/admin_login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    adminToken = data.token;
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    loadSessions();
+                } else {
+                    showError(data.message);
+                }
+            } catch (error) {
+                showError('Error de conexión');
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        async function loadSessions() {
+            const container = document.getElementById('sessionsContainer');
+            
+            try {
+                container.innerHTML = `
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Cargando sesiones...</p>
+                    </div>
+                `;
+
+                const response = await fetch('/admin/sessions', {
+                    headers: {
+                        'Authorization': `Bearer ${adminToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStats(data);
+                    displaySessions(data.active_sessions || []);
+                } else {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>Error al cargar datos</h3>
+                            <p>${data.message}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>Error de conexión</h3>
+                        <p>No se pudo conectar con el servidor</p>
+                    </div>
+                `;
+            }
+        }
+
+        function updateStats(data) {
+            document.getElementById('totalSessions').textContent = data.total_sessions || 0;
+            document.getElementById('maxUsers').textContent = data.max_users || 0;
+            
+            const usage = data.max_users > 0 ? Math.round((data.total_sessions / data.max_users) * 100) : 0;
+            document.getElementById('usagePercent').textContent = usage + '%';
+        }
+
+        function displaySessions(sessions) {
+            const container = document.getElementById('sessionsContainer');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No hay sesiones activas</h3>
+                        <p>Actualmente no hay usuarios conectados</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const tableHTML = `
+                <table class="sessions-table">
+                    <thead>
+                        <tr>
+                            <th>Usuario</th>
+                            <th>Dispositivo</th>
+                            <th>Última Actividad</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sessions.map(session => `
+                            <tr>
+                                <td><strong>${session.username}</strong></td>
+                                <td>${session.device_id}</td>
+                                <td>${formatDate(session.last_activity)}</td>
+                                <td>
+                                    <button class="action-btn" onclick="kickUser('${session.username}')">
+                                        🚫 Expulsar
+                                    </button>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        async function kickUser(username) {
+            if (!confirm(`¿Estás seguro de que quieres expulsar al usuario "${username}"?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/kick_user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${adminToken}`
+                    },
+                    body: JSON.stringify({ username })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert(`Usuario "${username}" ha sido expulsado exitosamente`);
+                    loadSessions();
+                } else {
+                    alert(`Error: ${data.message}`);
+                }
+            } catch (error) {
+                alert('Error de conexión');
+            }
+        }
+
+        function logout() {
+            adminToken = null;
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('adminPanel').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (error) {
+                return dateString;
+            }
+        }
+    </script>
+</body>
+</html>'''
+        
+        return admin_html, 200, {'Content-Type': 'text/html'}
+    
+    return "Método no permitido", 405
+
+@app.route('/admin_login', methods=['POST'])
+def admin_login():
+    """Login para administradores"""
+    try:
+        data = request.get_json()
+        username = data.get('username')
+        password = data.get('password')
+        
+        # Verificar credenciales de administrador
+        if username == 'admin' and password == USERS.get('admin'):
+            # Generar token simple (en producción usar JWT)
+            import hashlib
+            import time
+            token = hashlib.md5(f"{username}{time.time()}".encode()).hexdigest()
+            
+            return jsonify({
+                "success": True,
+                "message": "Login exitoso",
+                "token": token
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": "Credenciales incorrectas"
+            }), 401
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Error interno del servidor"
+        }), 500
+
+@app.route('/admin/sessions', methods=['GET'])
+def admin_get_sessions():
+    """Obtener sesiones activas (requiere autenticación de admin)"""
+    try:
+        # Verificar token (simplificado)
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({
+                "success": False,
+                "message": "Token de autenticación requerido"
+            }), 401
+        
+        # En producción, validar el token JWT aquí
+        
+        active_sessions_list = []
+        for username, session in active_sessions.items():
+            active_sessions_list.append({
+                "username": username,
+                "device_id": session["device_id"],
+                "last_activity": session["last_activity"]
+            })
+        
+        return jsonify({
+            "success": True,
+            "active_sessions": active_sessions_list,
+            "total_sessions": len(active_sessions),
+            "max_users": len(USERS)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Error interno del servidor"
+        }), 500
+
+@app.route('/admin/kick_user', methods=['POST'])
+def admin_kick_user():
+    """Expulsar usuario (requiere autenticación de admin)"""
+    try:
+        # Verificar token (simplificado)
+        auth_header = request.headers.get('Authorization')
+        if not auth_header or not auth_header.startswith('Bearer '):
+            return jsonify({
+                "success": False,
+                "message": "Token de autenticación requerido"
+            }), 401
+        
+        data = request.get_json()
+        username = data.get('username')
+        
+        if not username:
+            return jsonify({
+                "success": False,
+                "message": "Usuario requerido"
+            }), 400
+        
+        if username in active_sessions:
+            del active_sessions[username]
+            print(f"[ADMIN] Usuario '{username}' expulsado por administrador")
+            
+            return jsonify({
+                "success": True,
+                "message": f"Usuario '{username}' expulsado exitosamente"
+            })
+        else:
+            return jsonify({
+                "success": False,
+                "message": f"Usuario '{username}' no tiene sesión activa"
+            }), 404
+            
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": "Error interno del servidor"
+        }), 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False) 
